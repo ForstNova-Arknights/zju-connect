@@ -18,6 +18,7 @@ import (
 	"github.com/mythologyli/zju-connect/client"
 	atrustclient "github.com/mythologyli/zju-connect/client/atrust"
 	"github.com/mythologyli/zju-connect/client/atrust/auth"
+	"github.com/mythologyli/zju-connect/client/authchallenge"
 	easyconnectclient "github.com/mythologyli/zju-connect/client/easyconnect"
 	"github.com/mythologyli/zju-connect/configs"
 	"github.com/mythologyli/zju-connect/dial"
@@ -166,6 +167,19 @@ func main() {
 			}
 		}
 
+		var challengeHandler authchallenge.Handler
+		if conf.CasAutoLogin && conf.AuthType == "auth/cas" {
+			challengeHandler = auth.NewCASAutoChallengeHandler(
+				authchallenge.NewCLIHandler(authchallenge.CLIOptions{}),
+				auth.CASLoginOptions{
+					Username: conf.Username,
+					Password: conf.Password,
+					Domain:   conf.LoginDomain,
+				},
+			)
+			log.Println("aTrust CAS auto login enabled")
+		}
+
 		vpnClient = atrustclient.NewClient(atrustclient.ClientOptions{
 			Session: atrustclient.SessionOptions{
 				Username: conf.Username,
@@ -192,6 +206,7 @@ func main() {
 			TOTPSecret:               conf.TOTPSecret,
 			ClientData:               clientData,
 			ResourceData:             resourceData,
+			ChallengeHandler:         challengeHandler,
 			BestNodesRefreshInterval: time.Duration(conf.UpdateBestNodesInterval) * time.Second,
 			SessionRefreshInterval:   time.Duration(conf.SessionRefreshInterval) * time.Second,
 			SaveClientData:           saveClientDataFunc,

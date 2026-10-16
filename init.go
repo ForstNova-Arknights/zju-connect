@@ -129,6 +129,7 @@ func newFlagSet(defaults configs.Config) *pflag.FlagSet {
 	flags.String("login-domain", defaults.LoginDomain, "aTrust login domain")
 	flags.String("client-data-file", defaults.ClientDataFile, "aTrust Client Data File")
 	flags.String("cas-ticket", defaults.CasTicket, "aTrust CAS Ticket")
+	flags.Bool("cas-auto-login", defaults.CasAutoLogin, "Automatically log in through CAS instead of prompting for the callback URL")
 	flags.String("oauth2-code", defaults.OAuth2Code, "aTrust OAuth2 code")
 	flags.String("sid", defaults.SID, "aTrust SID")
 	flags.String("device-id", defaults.DeviceID, "aTrust Device ID")

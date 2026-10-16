@@ -23,3 +23,12 @@ go.work
 
 # Config file
 config.toml
+atrust-shou.toml
+client_data.json
+.shou_atrust/
+shou_atrust_http.py
+shou.env
+# Local build outputs (SHOU)
+/zju-connect
+/zju-connect-armv7
+/mefrpc

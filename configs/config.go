@@ -53,6 +53,7 @@ type Config struct {
 	LoginDomain             string `koanf:"login_domain"`
 	ClientDataFile          string `koanf:"client_data_file"`
 	CasTicket               string `koanf:"cas_ticket"`
+	CasAutoLogin            bool   `koanf:"cas_auto_login"`
 	OAuth2Code              string `koanf:"oauth2_code"`
 	SID                     string `koanf:"sid"`
 	DeviceID                string `koanf:"device_id"`

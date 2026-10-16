@@ -55,7 +55,7 @@ func (s *Session) casCallbackFromTicket(loginDomain, ticket string) string {
 func (s *Session) interactiveCas(loginURL string) (string, error) {
 	response, err := s.challengeHandler.HandleExternalLogin(authchallenge.ExternalLoginChallenge{
 		Kind:     authchallenge.ExternalLoginCAS,
-		LoginURL: loginURL,
+		LoginURL: s.resolveLoginURL(loginURL),
 		Message:  "Please enter the callback url:",
 	})
 	if err != nil {
@@ -70,6 +70,24 @@ func (s *Session) interactiveCas(loginURL string) (string, error) {
 		return "", err
 	}
 	return response.CallbackURL, nil
+}
+
+// resolveLoginURL turns a server-provided login URL into an absolute URL.
+// aTrust returns relative URLs such as
+// "/passport/v1/public/casLogin?sfDomain=cas07533" in authInfoList.
+func (s *Session) resolveLoginURL(loginURL string) string {
+	if loginURL == "" {
+		return loginURL
+	}
+	base, err := url.Parse(s.baseURL)
+	if err != nil {
+		return loginURL
+	}
+	ref, err := url.Parse(loginURL)
+	if err != nil {
+		return loginURL
+	}
+	return base.ResolveReference(ref).String()
 }
 
 func validateCASCallbackURL(callbackURL *url.URL) error {
