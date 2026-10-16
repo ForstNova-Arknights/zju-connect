@@ -141,8 +141,18 @@ func NewSessionContext(ctx context.Context, server string, tlsKeyLogWriter io.Wr
 	}
 }
 
+// request sends req with the session's HTTP client.
+//
+// A request that already carries a context (one built with
+// http.NewRequestWithContext) keeps it, so a caller can cancel or time out an
+// individual call. Requests built with the bare http.NewRequest carry
+// context.Background() and fall back to the session context, which is what
+// NewSessionContext exists to own.
 func (s *Session) request(req *http.Request) (*http.Response, error) {
-	return s.client.Do(req.WithContext(s.ctx))
+	if req.Context() == context.Background() {
+		req = req.WithContext(s.ctx)
+	}
+	return s.client.Do(req)
 }
 
 type AuthInfo struct {
