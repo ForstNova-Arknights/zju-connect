@@ -19,17 +19,14 @@ services:
     container_name: zju-connect
     restart: unless-stopped
 
-    # 用自定义网络。自定义网络才有 Docker 内嵌 DNS，容器之间可以用
-    # 容器名互访（默认 bridge 只认 IP，不解析名字）。
+    # 用默认的 bridge 网络（172.17.0.0/16），不让 compose 另建一个网络。
     #
-    # 名字显式写成 zju-connect-net，而不是让 compose 自动生成
-    # zju-connect-docker_default —— 后者只有本项目这一个服务在里面，
-    # 名字解析没有意义，而且项目目录改名就会变。
-    #
-    # 想让别的容器也能用 `zju-connect` 这个名字访问，把它们接进来即可：
-    #   docker network connect zju-connect-net qinglong
-    networks:
-      - zju-connect-net
+    # 关于容器名互访：Docker 只在「用户自定义网络」里跑内嵌 DNS
+    # (127.0.0.11)，默认 bridge 是把宿主机的 nameserver 原样抄进容器
+    # （resolv.conf 里标着 legacy），所以容器之间只能按 IP 访问。
+    # 如果哪天需要按名字访问，要么把需要的容器一起接进一个自定义网络，
+    # 要么就直接用宿主机 IP —— 端口已经发布到宿主机了。
+    network_mode: bridge
 
     ports:
       # ── SOCKS5 (1080) ────────────────────────────────────────────
@@ -63,9 +60,3 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
-networks:
-  zju-connect-net:
-    # 显式指定 name，避免 compose 加上项目名前缀
-    name: zju-connect-net
-    driver: bridge
