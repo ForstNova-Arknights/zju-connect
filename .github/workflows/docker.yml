@@ -99,5 +99,10 @@ jobs:
           build-args: |
             VERSION=${{ steps.vars.outputs.version }}
             COMMIT_ID=${{ steps.vars.outputs.commit_id }}
+          # 关掉 provenance / SBOM attestation：它们会在 manifest index 里
+          # 多出 8 个 platform=unknown/unknown 的条目，部分镜像代理和旧版
+          # Docker 处理不好。本项目用不上这些证明。
+          provenance: false
+          sbom: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
