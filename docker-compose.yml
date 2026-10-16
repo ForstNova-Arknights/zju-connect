@@ -19,6 +19,14 @@ services:
     container_name: zju-connect
     restart: unless-stopped
 
+    # 直接用默认的 bridge 网络（172.17.0.0/16），不再让 compose 单独建
+    # 一个 zju-connect-docker_default。少一个网段，也方便同宿主机上的
+    # 其它容器直接按容器 IP 访问这两个代理端口。
+    #
+    # 注意：默认 bridge 没有内嵌 DNS，容器之间不能用容器名互访；
+    # zju-connect 本身不需要按名访问别人，所以没影响。
+    network_mode: bridge
+
     ports:
       # ── SOCKS5 (1080) ────────────────────────────────────────────
       # 支持用户名密码鉴权，在 config.toml 里设 socks_user / socks_passwd。
