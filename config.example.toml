@@ -1,0 +1,67 @@
+# zju-connect 配置模板 —— 上海海洋大学 aTrust 零信任 VPN
+#
+# 用法：
+#   cp config.example.toml config.toml
+#   chmod 600 config.toml          # 里面有凭据
+#   填好下面各项，然后 docker compose up -d
+#
+# ⚠️ 本文件含凭据，不要提交进仓库（.dockerignore / .gitignore 已排除）。
+
+protocol       = "atrust"
+server_address = "vpn.shou.edu.cn"
+server_port    = 443
+
+# ── 认证 ────────────────────────────────────────────────────────────
+# auth/cas + cas_auto_login 是唯一可无人值守的路径：
+#   * auth/psw（本地密码）会触发点击式图形验证码，5 分钟超时，必须人工
+#   * cas07533 是门户 authServerInfoList 里 auth/cas 那条的 loginDomain
+auth_type      = "auth/cas"
+login_domain   = "cas07533"
+cas_auto_login = true
+totp_secret    = "<TOTP base32 密钥>"
+
+username = "2452415"
+password = "<CAS 密码>"
+
+# 留空即可，CAS 自动登录会自己取 ST
+cas_ticket = ""
+
+# ── 隧道栈 ──────────────────────────────────────────────────────────
+# ★★ 必须保持 false（走 gvisor netstack）。
+#
+#   服务端下发的内网 DNS 只开 UDP 53，而 tcp_tunnel_mode = true 用的是
+#   stack/tcptunnel，它的 DialUDP 是硬编码的：
+#       return nil, fmt.Errorf("not implemented")
+#   resolver 在 UDP 失败后会 preferTCPTemporarily() 切到 TCP-only，
+#   而 TCP:53 会被服务端以 SOCKS5 0x02 拒绝 —— DNS 全挂。
+tcp_tunnel_mode = false
+
+# 不建 TUN 设备、不改路由：纯用户态代理，因此**不需要 root / NET_ADMIN**
+tun_mode  = false
+add_route = false
+
+# 保留服务端下发的 DNS（58.246.161.68）。
+# 不要设成 true —— 资源列表里 chat.shou.edu.cn 匹配 0 条域名资源，
+# 关掉远端 DNS 后它根本无从解析。
+disable_remote_dns = false
+
+# ── 代理监听 ────────────────────────────────────────────────────────
+# 容器内必须绑 0.0.0.0，绑 127.0.0.1 的话端口映射进不来。
+socks_bind = "0.0.0.0:1080"
+http_bind  = "0.0.0.0:8888"
+
+# SOCKS5 支持用户名密码鉴权（强烈建议开启，见 README 的安全说明）
+# socks_user   = "<用户名>"
+# socks_passwd = "<密码>"
+#
+# ⚠️ HTTP 代理**不支持鉴权**（service/http.go 的 ServeHTTP 没有
+#    user/password 参数）。把它映射到 0.0.0.0 等于把校内网开放给整个
+#    局域网，务必只绑 127.0.0.1 或自行加防火墙。
+
+# ── 会话 / 保活 ─────────────────────────────────────────────────────
+session_refresh_interval = 1800
+disable_keep_alive       = false
+
+# 绝对路径，落在挂载出来的卷里 —— 容器重建也不会丢会话。
+# 这个文件等同凭据：登录成功后连密码和 TOTP 都不再需要。
+client_data_file = "/data/state/client_data.json"

@@ -1,14 +1,53 @@
-version: '3'
+# zju-connect 容器化部署 —— 上海海洋大学 aTrust
+#
+#   mkdir -p state
+#   cp config.example.toml config.toml && chmod 600 config.toml
+#   $EDITOR config.toml
+#   docker compose up -d
+#   docker compose logs -f
+#
+# 板子（armv7）走南大镜像源，比直连 ghcr.io 稳：
+#   ghcr.nju.edu.cn/forstnova-arknights/zju-connect:latest
 
 services:
   zju-connect:
-    build:
-      context: .
-    image: zju-connect
+    # 默认用 CI 发布的镜像；想从源码本地构建就把 image 换成下面两行
+    image: ${ZJU_IMAGE:-ghcr.nju.edu.cn/forstnova-arknights/zju-connect:latest}
+    # build:
+    #   context: .
+
     container_name: zju-connect
     restart: unless-stopped
+
     ports:
-      - 1080:1080
-      - 1081:1081
+      # ── SOCKS5 (1080) ────────────────────────────────────────────
+      # 支持用户名密码鉴权，在 config.toml 里设 socks_user / socks_passwd。
+      - "1080:1080"
+
+      # ── HTTP 代理 (8888) ─────────────────────────────────────────
+      # ⚠️ 上游的 HTTP 代理**没有鉴权**（ServeHTTP 不接受 user/password）。
+      #    下面这行会把「通往校内网的代理」开放给整个局域网。
+      #    单机自用请改成只绑回环：
+      #        - "127.0.0.1:8888:8888"
+      - "8888:8888"
+
     volumes:
-      - ./config.toml:/home/nonroot/config.toml
+      # 配置只读挂载 —— 里面有 CAS 密码和 TOTP 密钥
+      - ./config.toml:/data/config.toml:ro
+
+      # 会话状态持久化。client_data.json 等同凭据：
+      # 登录成功后连密码 / TOTP 都不再需要，删了就要重新走一遍登录。
+      - ./state:/data/state
+
+    environment:
+      - TZ=Asia/Shanghai
+
+    # 纯用户态代理，不建 TUN、不改路由，所以不需要下面这些：
+    #   cap_add: [NET_ADMIN]
+    #   devices: ["/dev/net/tun:/dev/net/tun"]
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

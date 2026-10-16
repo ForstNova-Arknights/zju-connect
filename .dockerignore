@@ -1,0 +1,28 @@
+# 构建上下文里不需要的东西 —— 尤其不能让凭据进镜像
+
+.git
+.github
+.gitignore
+
+# 本地产物
+zju-connect
+zju-connect-*
+mefrpc
+build_assets/
+*.log
+*.zip
+*.exe
+
+# ★ 凭据类，绝不打包进镜像
+config.toml
+atrust-shou.toml
+atrust-local.toml
+client_data.json
+.shou_atrust/
+shou.env
+shou_atrust_http.py
+
+# 文档 / 脚本
+README*.md
+docker-compose.yml
+*.py
